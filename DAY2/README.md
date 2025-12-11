@@ -1,0 +1,363 @@
+# DAY2 - 深度學習圖片分類器 (PyTorch)
+
+## 課程目標
+
+本課程將學習如何使用 PyTorch 建立深度學習圖片分類器：
+- 神經網路 (NN) 與卷積神經網路 (CNN) 基礎
+- MNIST 手寫數字辨識
+- 貓狗二分類器
+- 遷移學習 (Transfer Learning)
+- 自訂義分類器 (預留)
+
+---
+
+## 環境設置
+
+### 1. 安裝 Python
+
+確保已安裝 Python 3.8 或以上版本。
+
+### 2. 安裝 PyTorch
+
+#### Windows / Linux (有 NVIDIA GPU)
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+```
+
+#### Windows / Linux (無 GPU，使用 CPU)
+```bash
+pip install torch torchvision
+```
+
+#### Mac
+```bash
+pip install torch torchvision
+```
+
+### 3. 安裝其他相依套件
+```bash
+cd DAY2
+pip install -r requirements.txt
+```
+
+### 4. 驗證安裝
+```python
+import torch
+print(f"PyTorch 版本: {torch.__version__}")
+print(f"CUDA 可用: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+```
+
+---
+
+## 目錄結構
+
+```
+DAY2/
+├── requirements.txt         # Python 相依套件
+├── README.md               # 本說明文件
+├── 01_MNIST/               # MNIST 手寫數字辨識
+│   ├── train.py           # 訓練腳本
+│   └── predict.py         # 預測腳本
+├── 02_CatDog/              # 貓狗分類器
+│   ├── train.py           # 訓練腳本
+│   ├── predict.py         # 預測腳本
+│   └── download_sample_data.py  # 資料準備工具
+└── 03_Custom/              # 自訂義分類器 (預留)
+```
+
+---
+
+## 範例一：MNIST 手寫數字辨識
+
+### 簡介
+
+MNIST 是機器學習領域最經典的入門資料集，包含 60,000 張訓練圖片和 10,000 張測試圖片，每張圖片是 28x28 像素的灰階手寫數字 (0-9)。
+
+### 操作步驟
+
+#### 步驟 1：進入目錄
+```bash
+cd DAY2/01_MNIST
+```
+
+#### 步驟 2：執行訓練
+```bash
+python train.py
+```
+
+程式會自動：
+1. 下載 MNIST 資料集（首次執行時）
+2. 建立 CNN 模型
+3. 訓練 10 個 epoch
+4. 顯示訓練曲線
+5. 儲存模型至 `mnist_cnn.pth`
+
+#### 步驟 3：使用模型預測
+```bash
+python predict.py --image your_image.png
+```
+
+### 模型架構
+
+```
+SimpleCNN
+├── Conv2d(1, 32, 3x3) + BatchNorm + ReLU + MaxPool
+├── Conv2d(32, 64, 3x3) + BatchNorm + ReLU + MaxPool
+├── Flatten
+├── Linear(64*7*7, 128) + ReLU + Dropout
+└── Linear(128, 10)
+```
+
+### 預期結果
+
+- 訓練時間：約 5-10 分鐘 (CPU) / 1-2 分鐘 (GPU)
+- 測試準確率：約 99%
+
+### 輸出檔案
+
+| 檔案 | 說明 |
+|------|------|
+| `mnist_cnn.pth` | 訓練好的模型權重 |
+| `training_history.png` | 訓練損失/準確率曲線 |
+| `prediction_samples.png` | 預測範例視覺化 |
+
+---
+
+## 範例二：貓狗分類器
+
+### 簡介
+
+使用 CNN 和遷移學習建立貓狗二分類器。支援兩種模式：
+- **自定義 CNN**：從頭訓練
+- **遷移學習**：使用預訓練的 ResNet18（推薦）
+
+### 資料準備
+
+#### 步驟 1：建立資料目錄
+```bash
+cd DAY2/02_CatDog
+python download_sample_data.py
+```
+
+#### 步驟 2：放入圖片
+
+將圖片依照類別放入對應目錄：
+```
+02_CatDog/
+└── data/
+    ├── cats/          # 放入貓的圖片
+    │   ├── cat1.jpg
+    │   ├── cat2.jpg
+    │   └── ...
+    └── dogs/          # 放入狗的圖片
+        ├── dog1.jpg
+        ├── dog2.jpg
+        └── ...
+```
+
+#### 資料集下載來源
+
+1. **Kaggle Dogs vs Cats** (推薦)
+   - 網址：https://www.kaggle.com/c/dogs-vs-cats/data
+   - 約 25,000 張訓練圖片
+
+2. **Oxford-IIIT Pet Dataset**
+   - 網址：https://www.robots.ox.ac.uk/~vgg/data/pets/
+   - 學術研究用資料集
+
+3. **自己蒐集**
+   - 建議每類至少 100 張以上
+
+### 操作步驟
+
+#### 步驟 1：訓練模型
+```bash
+cd DAY2/02_CatDog
+python train.py
+```
+
+#### 步驟 2：修改訓練設定 (可選)
+
+編輯 `train.py` 頂部的設定區：
+
+```python
+BATCH_SIZE = 32          # 批次大小 (GPU 記憶體不足時調小)
+EPOCHS = 10              # 訓練輪數
+LEARNING_RATE = 0.001    # 學習率
+USE_PRETRAINED = True    # 是否使用預訓練模型
+```
+
+#### 步驟 3：預測單張圖片
+```bash
+python predict.py --image path/to/image.jpg
+```
+
+#### 步驟 4：批次預測
+```bash
+python predict.py --folder path/to/images/
+```
+
+### 模型架構
+
+**使用預訓練模型 (ResNet18)**：
+```
+ResNet18 (預訓練)
+├── [凍結] 卷積層 (從 ImageNet 學習的特徵)
+└── [訓練] 全連接層
+    ├── Linear(512, 256) + ReLU + Dropout
+    └── Linear(256, 2)
+```
+
+**自定義 CNN**：
+```
+SimpleCNN
+├── Conv Block 1: Conv2d(3, 32) + BN + ReLU + Pool
+├── Conv Block 2: Conv2d(32, 64) + BN + ReLU + Pool
+├── Conv Block 3: Conv2d(64, 128) + BN + ReLU + Pool
+├── Conv Block 4: Conv2d(128, 256) + BN + ReLU + Pool
+├── Flatten
+├── Linear(256*14*14, 512) + ReLU + Dropout
+└── Linear(512, 2)
+```
+
+### 預期結果
+
+| 模式 | 訓練時間 | 準確率 |
+|------|----------|--------|
+| 預訓練 ResNet18 | 較快 | 90-95% |
+| 自定義 CNN | 較慢 | 80-90% |
+
+### 輸出檔案
+
+| 檔案 | 說明 |
+|------|------|
+| `catdog_model.pth` | 訓練好的模型權重 |
+| `training_history.png` | 訓練曲線 |
+| `prediction_samples.png` | 預測範例 |
+| `prediction_result.png` | 單張預測結果 |
+
+---
+
+## 範例三：自訂義分類器 (預留)
+
+此部分將在後續課程中實作，用於自訂類別的圖片分類任務。
+
+---
+
+## 核心概念說明
+
+### 卷積神經網路 (CNN)
+
+CNN 專門用於處理圖像資料，主要組成：
+
+1. **卷積層 (Convolution)**：提取圖像特徵
+2. **池化層 (Pooling)**：降低維度，增加平移不變性
+3. **全連接層 (Fully Connected)**：進行最終分類
+
+### 遷移學習 (Transfer Learning)
+
+利用在大型資料集（如 ImageNet）上預訓練的模型，將學習到的特徵轉移到新任務：
+
+- **優點**：訓練快、準確率高、所需資料量少
+- **做法**：凍結預訓練層，只訓練最後的分類層
+
+### 資料增強 (Data Augmentation)
+
+訓練時對影像進行隨機變換，增加資料多樣性：
+
+```python
+transforms.RandomHorizontalFlip()    # 隨機水平翻轉
+transforms.RandomRotation(15)        # 隨機旋轉
+transforms.ColorJitter(...)          # 色彩抖動
+```
+
+---
+
+## 常見問題
+
+### Q: CUDA out of memory 錯誤
+
+**A**: GPU 記憶體不足，嘗試：
+- 減小 `BATCH_SIZE`（例如：32 → 16 → 8）
+- 減小 `IMAGE_SIZE`
+- 使用 CPU 訓練
+
+### Q: 訓練很慢
+
+**A**:
+- 確認是否使用 GPU：`torch.cuda.is_available()` 應返回 `True`
+- 減少訓練資料量進行測試
+- 使用預訓練模型加速收斂
+
+### Q: 準確率很低
+
+**A**:
+- 確認資料是否正確分類
+- 增加訓練資料量
+- 調整學習率
+- 增加訓練輪數
+- 檢查是否過擬合（訓練準確率高但驗證準確率低）
+
+### Q: 如何使用自己的圖片進行預測？
+
+**A**:
+1. 確保圖片是常見格式（.jpg, .png）
+2. 使用 predict.py：
+   ```bash
+   python predict.py --image your_image.jpg
+   ```
+
+### Q: 如何儲存和載入模型？
+
+**A**:
+```python
+# 儲存
+torch.save(model.state_dict(), 'model.pth')
+
+# 載入
+model = YourModel()
+model.load_state_dict(torch.load('model.pth'))
+model.eval()
+```
+
+---
+
+## 練習題
+
+### 初級
+1. 修改 MNIST 的訓練輪數，觀察準確率變化
+2. 調整學習率，比較訓練效果
+3. 嘗試使用不同的優化器（SGD vs Adam）
+
+### 中級
+1. 在 MNIST 模型中增加更多卷積層
+2. 調整貓狗分類器的資料增強策略
+3. 比較預訓練模型和自定義模型的效果
+
+### 進階
+1. 實作早停 (Early Stopping) 機制
+2. 加入學習率衰減策略
+3. 使用不同的預訓練模型（VGG16, ResNet50）
+
+---
+
+## 參考資源
+
+- [PyTorch 官方教學](https://pytorch.org/tutorials/)
+- [MNIST 資料集](http://yann.lecun.com/exdb/mnist/)
+- [Kaggle Dogs vs Cats](https://www.kaggle.com/c/dogs-vs-cats)
+- [Transfer Learning Tutorial](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
+
+---
+
+## 下一步
+
+完成 DAY2 的學習後，你將具備：
+- PyTorch 深度學習框架的基礎操作
+- CNN 圖片分類模型的建立與訓練
+- 遷移學習的實作經驗
+- 模型評估與視覺化技巧
+
+繼續學習 DAY3 的進階內容！
